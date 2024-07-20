@@ -1,25 +1,36 @@
+from sys import exit
+from win32event import CreateMutex
+from win32api import CloseHandle, GetLastError
+from winerror import ERROR_ALREADY_EXISTS
 import pickle
+import time
 from pynput.keyboard import Key, Listener, Controller, _NORMAL_MODIFIERS
 
 MACRO_FILENAME:str = r"F:\GitHub\PythonRecordMacro\Code\dist\MacroRecording.txt"
+TIMEOUT_DURATION = 15       # Seconds before script times out and closes itself
+TimeoutStart = time.time()  # I reset this variable back to time.time() everytime there is a key pressed
+                            # This allows for the script to timeout only if left idle
 
 InputRecord:list = []
 ModifiedKeyCodes:tuple = ([Key],[])
 ModiferPressed:bool = None
-keyboard = Controller()
+Keyboard = Controller()
 
-""" def ExecuteMacro(inputRecord):
-    for entry in inputRecord:
-        if isinstance(entry, tuple):
-            # print(f"{inp} is a Tuple of Modified Inputs")
-            with keyboard.pressed(entry[0]):
-                print(f"MODIFIER: {entry[0]}")
-                for keyCode in entry[1]:
-                    keyboard.tap(keyCode)
-                    print(f"Pressed Modified: {keyCode}")
-        else:
-            keyboard.tap(entry)
-            print(f"Pressed: {entry}") """
+# https://code.activestate.com/recipes/474070-creating-a-single-instance-application/
+class SingletonInstance:
+    """ Limits application to single instance """
+
+    def __init__(self):
+        self.mutexname = "testmutex_{D0E858DF-985E-4907-B7FB-8D732C3FC3B9}"
+        self.mutex = CreateMutex(None, False, self.mutexname)
+        self.lasterror = GetLastError()
+
+    def AlreadyRunning(self):
+        return (self.lasterror == ERROR_ALREADY_EXISTS)
+
+    def __del__(self):
+        if self.mutex:
+            CloseHandle(self.mutex)
 
 def SaveMacroToFile(inputRecord:list, fileName:str):
     if len(inputRecord) == 0:
@@ -36,6 +47,8 @@ def SaveMacroToFile(inputRecord:list, fileName:str):
 
 def on_press(key):
     global ModiferPressed
+    global TimeoutStart
+    TimeoutStart = time.time()
 
     # If there is no Modifier already pressed and the key that was just pressed is of type Key and is a Modifier
     if not ModiferPressed and isinstance(key, Key) and key.value in _NORMAL_MODIFIERS:
@@ -59,7 +72,6 @@ def on_press(key):
         print(f'{key} press')
         InputRecord.append(key)
 
-
 def on_release(key):
     print(f'{key} release')
 
@@ -74,17 +86,32 @@ def on_release(key):
         InputRecord.append((modifier,keyCodes))
         ModifiedKeyCodes[1].clear()
 
-def main():
-    while True:
-        # Collect events until released
-        with Listener(
-                on_press=on_press,
-                on_release=on_release) as listener:
-            listener.join()
 
-        if not listener.running:
-            print("Exit")
-            break
+def main():
+    myApp = SingletonInstance()
+    if myApp.AlreadyRunning():
+        print("Another Instance of this program is already running. Exiting")
+        exit(0)
+
+    # Collect events until released
+    with Listener(
+            on_press=on_press,
+            on_release=on_release) as listener:
+
+        # Will timeout the script after TIMEOUT_DURATION has elapsed with no user input
+        while True:
+            time.sleep(1)
+            if time.time() >= TimeoutStart + TIMEOUT_DURATION:
+                print("Timeout")
+                listener.stop()
+                break
+            if not listener.running:
+                print("Listener Dead")
+                break
+
+        listener.join()
+    print("Exit")
+    exit(0)
 
 if __name__ == '__main__':
     main()
