@@ -1,7 +1,7 @@
 import pickle
 from pynput.keyboard import Controller, _NORMAL_MODIFIERS
 
-MACRO_FILENAME:str = "MacroRecording.txt"
+MACRO_FILENAME:str = r"F:\GitHub\PythonRecordMacro\Code\dist\MacroRecording.txt"
 
 InputRecord:list = []
 keyboard = Controller()
