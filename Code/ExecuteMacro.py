@@ -1,15 +1,42 @@
-from pynput.keyboard import Key, Listener, Controller, _NORMAL_MODIFIERS
+import pickle
+from pynput.keyboard import Controller, _NORMAL_MODIFIERS
 
+MACRO_FILENAME:str = "MacroRecording.txt"
+
+InputRecord:list = []
 keyboard = Controller()
 
-
-def OutputInputRecord(inputRecord):
-    for inp in inputRecord:
-        if isinstance(inp, tuple):
-            print(f"{inp} is a Tuple of Modified Inputs")
-            with keyboard.pressed(inp[0]):
-                for keyCode in inp[1]:
+def ExecuteMacro(inputRecord:list):
+    for entry in inputRecord:
+        if isinstance(entry, tuple):
+            with keyboard.pressed(entry[0]):
+                print(f"MODIFIER: {entry[0]}")
+                for keyCode in entry[1]:
                     keyboard.tap(keyCode)
+                    print(f"Pressed Modified: {keyCode}")
         else:
-            keyboard.tap(inp)
-            print(f"Pressed: {inp}")
+            keyboard.tap(entry)
+            print(f"Pressed: {entry}")
+
+def LoadMacrofromFile(fileName:str) -> list:
+    inputRecord:list = []
+    try:
+        print(f"Attemping to load file: '{fileName}'")
+        pickleFile = open(fileName, "rb")
+    except FileNotFoundError:
+        print(f"Couldn't find file: '{fileName}'. Exiting")
+        exit()
+    else:
+        with pickleFile:
+            inputRecord = pickle.load(pickleFile)
+            print(f"Loaded Macro: {inputRecord}")
+
+    if len(inputRecord) == 0:
+        print("Macro was Empty. Exiting")
+        exit()
+
+    return inputRecord
+
+
+InputRecord = LoadMacrofromFile(MACRO_FILENAME)
+ExecuteMacro(InputRecord)
