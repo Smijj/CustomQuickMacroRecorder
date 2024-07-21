@@ -1,10 +1,14 @@
 from sys import exit
 from win32event import CreateMutex
-from win32api import CloseHandle, GetLastError
+from win32api import CloseHandle, GetLastError, RegisterWindowMessage, PostMessage
 from winerror import ERROR_ALREADY_EXISTS
+# import ctypes
+# import ctypes.wintypes
 import pickle
 import time
 from pynput.keyboard import Key, Listener, Controller, _NORMAL_MODIFIERS
+
+# user32 = ctypes.windll.user32
 
 MACRO_FILENAME:str = r"F:\GitHub\PythonRecordMacro\Code\dist\MacroRecording.txt"
 TIMEOUT_DURATION = 15       # Seconds before script times out and closes itself
@@ -24,9 +28,16 @@ class SingletonInstance:
         self.mutexname = "testmutex_{D0E858DF-985E-4907-B7FB-8D732C3FC3B9}"
         self.mutex = CreateMutex(None, False, self.mutexname)
         self.lasterror = GetLastError()
+        print(f"Created Mutex: {self.mutex}")
+
+        # self.myMessageID = RegisterWindowMessage("RecordMacroMessage")
 
     def AlreadyRunning(self):
-        return (self.lasterror == ERROR_ALREADY_EXISTS)
+        # if self.mutex and self.lasterror == ERROR_ALREADY_EXISTS:
+        #     PostMessage(self.mutex, self.myMessageID, 0, 0)
+        #     print(f"This is a secondary instance. Handle: {self.mutex}")
+
+        return self.lasterror == ERROR_ALREADY_EXISTS
 
     def __del__(self):
         if self.mutex:
@@ -90,7 +101,9 @@ def on_release(key):
 def main():
     myApp = SingletonInstance()
     if myApp.AlreadyRunning():
+        # print(f"Last Error: {myApp.lasterror}")
         print("Another Instance of this program is already running. Exiting")
+        # time.sleep(6)
         exit(0)
 
     # Collect events until released
@@ -100,6 +113,8 @@ def main():
 
         # Will timeout the script after TIMEOUT_DURATION has elapsed with no user input
         while True:
+            # print(myApp.lasterror)
+            # print(user32.GetMessageW(myApp.myMessageID, 0 ,0 ,0))
             time.sleep(1)
             if time.time() >= TimeoutStart + TIMEOUT_DURATION:
                 print("Timeout")
