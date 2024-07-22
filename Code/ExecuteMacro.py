@@ -1,7 +1,14 @@
+import os, sys
 import pickle
 from pynput.keyboard import Controller, _NORMAL_MODIFIERS
 
-MACRO_FILENAME:str = r"F:\GitHub\PythonRecordMacro\Code\dist\MacroRecording.txt"
+MACRO_FILENAME:str = r"\MacroRecording.txt"
+MACRO_FILEPATH:str
+if getattr(sys, 'frozen', False):
+    MACRO_FILEPATH = os.path.dirname(sys.executable) + MACRO_FILENAME
+else:
+    MACRO_FILEPATH = os.path.dirname(os.path.abspath(__file__)) + MACRO_FILENAME
+print(MACRO_FILEPATH)
 
 InputRecord:list = []
 keyboard = Controller()
@@ -18,13 +25,13 @@ def ExecuteMacro(inputRecord:list):
             keyboard.tap(entry)
             print(f"Pressed: {entry}")
 
-def LoadMacrofromFile(fileName:str) -> list:
+def LoadMacrofromFile(filePath:str) -> list:
     inputRecord:list = []
     try:
-        print(f"Attemping to load file: '{fileName}'")
-        pickleFile = open(fileName, "rb")
+        print(f"Attemping to load file: '{filePath}'")
+        pickleFile = open(filePath, "rb")
     except FileNotFoundError:
-        print(f"Couldn't find file: '{fileName}'. Exiting")
+        print(f"Couldn't find file: '{filePath}'. Exiting")
         exit()
     else:
         with pickleFile:
@@ -38,5 +45,5 @@ def LoadMacrofromFile(fileName:str) -> list:
     return inputRecord
 
 
-InputRecord = LoadMacrofromFile(MACRO_FILENAME)
+InputRecord = LoadMacrofromFile(MACRO_FILEPATH)
 ExecuteMacro(InputRecord)

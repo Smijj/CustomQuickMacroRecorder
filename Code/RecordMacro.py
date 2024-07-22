@@ -1,19 +1,26 @@
-from sys import exit
 from win32event import CreateMutex
-from win32api import CloseHandle, GetLastError, RegisterWindowMessage, PostMessage
+from win32api import CloseHandle, GetLastError
 from winerror import ERROR_ALREADY_EXISTS
 # import ctypes
 # import ctypes.wintypes
 import pickle
-import time
+import sys, os, time
 from pynput.keyboard import Key, Listener, Controller, _NORMAL_MODIFIERS
 
 # user32 = ctypes.windll.user32
 
-MACRO_FILENAME:str = r"F:\GitHub\PythonRecordMacro\Code\dist\MacroRecording.txt"
+MACRO_FILENAME:str = r"\MacroRecording.txt"
+MACRO_FILEPATH:str
+if getattr(sys, 'frozen', False):
+    MACRO_FILEPATH = os.path.dirname(sys.executable) + MACRO_FILENAME
+else:
+    MACRO_FILEPATH = os.path.dirname(os.path.abspath(__file__)) + MACRO_FILENAME
+print(MACRO_FILEPATH)
+
 TIMEOUT_DURATION = 15       # Seconds before script times out and closes itself
 TimeoutStart = time.time()  # I reset this variable back to time.time() everytime there is a key pressed
                             # This allows for the script to timeout only if left idle
+
 
 InputRecord:list = []
 ModifiedKeyCodes:tuple = ([Key],[])
@@ -43,17 +50,17 @@ class SingletonInstance:
         if self.mutex:
             CloseHandle(self.mutex)
 
-def SaveMacroToFile(inputRecord:list, fileName:str):
+def SaveMacroToFile(inputRecord:list, filePath:str):
     if len(inputRecord) == 0:
         print("InputRecord was empty. Exiting")
         return
-    if not fileName:
+    if not filePath:
         print("FileName was empty. Exiting")
         return
 
-    with open(fileName, "wb") as pickleFile:
+    with open(filePath, "wb") as pickleFile:
         pickle.dump(inputRecord, pickleFile)
-        print(f"Saved Macro: {inputRecord} to File: '{fileName}'")
+        print(f"Saved Macro: {inputRecord} to File: '{filePath}'")
 
 
 def on_press(key):
@@ -73,7 +80,7 @@ def on_press(key):
         # Exits out of Macro Record mode if the hotkey RightAlt+RightShift is pressed
         if ModiferPressed == Key.alt_gr and key == Key.shift_r:
             print("Finshed Macro Record")
-            SaveMacroToFile(InputRecord, MACRO_FILENAME)
+            SaveMacroToFile(InputRecord, MACRO_FILEPATH)
             return False    # Stop listener
 
         print(f'Modified {key} press')
@@ -104,7 +111,7 @@ def main():
         # print(f"Last Error: {myApp.lasterror}")
         print("Another Instance of this program is already running. Exiting")
         # time.sleep(6)
-        exit(0)
+        sys.exit(0)
 
     # Collect events until released
     with Listener(
@@ -126,7 +133,7 @@ def main():
 
         listener.join()
     print("Exit")
-    exit(0)
+    sys.exit(0)
 
 if __name__ == '__main__':
     main()
