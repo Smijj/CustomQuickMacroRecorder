@@ -72,7 +72,7 @@ def on_release(key):
         ReleaseModifer()
     # print(f'{key} released')
 
-
+##
 def HandleModifiedKeyPress(key):
     # The modifier is being held down and will keep triggering so we dont want to listen to the input events from it
     if key == ModifierPressed: return True
